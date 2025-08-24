@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViralDeals Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .analysis-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .analysis-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .recommendation {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> ViralDeals Analytics Dashboard</h1>
+            <p>Comprehensive pricing performance analysis and insights</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">
+                <i class="fas fa-tachometer-alt"></i> Overview
+            </button>
+            <button class="nav-tab" onclick="showTab('pricing')">
+                <i class="fas fa-tags"></i> Pricing Analysis
+            </button>
+            <button class="nav-tab" onclick="showTab('categories')">
+                <i class="fas fa-layer-group"></i> Category Performance
+            </button>
+            <button class="nav-tab" onclick="showTab('recommendations')">
+                <i class="fas fa-lightbulb"></i> Recommendations
+            </button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-calculator"></i></div>
+                    <div class="value" id="totalCalculations">1,247</div>
+                    <div class="label">Total Calculations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-percentage"></i></div>
+                    <div class="value" id="avgMargin">32.4%</div>
+                    <div class="label">Average Profit Margin</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-rupee-sign"></i></div>
+                    <div class="value" id="avgPrice">₹847</div>
+                    <div class="label">Average Final Price</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-trophy"></i></div>
+                    <div class="value" id="bestCategory">Beauty</div>
+                    <div class="label">Best Performing Category</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Pricing Calculations Over Time</div>
+                <canvas id="calculationsChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h3><i class="fas fa-chart-pie"></i> Price Distribution</h3>
+                    <canvas id="priceDistributionChart" width="300" height="200"></canvas>
+                </div>
+                <div class="analysis-card">
+                    <h3><i class="fas fa-balance-scale"></i> Margin Analysis</h3>
+                    <div class="recommendation">
+                        <strong>Excellent Performance:</strong> Your average margin of 32.4% is well above the recommended minimum of 15%.
+                    </div>
+                    <div class="warning">
+                        <strong>Watch Out:</strong> 12% of calculations resulted in margins below 20%. Consider adjusting competition levels.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Analysis Tab -->
+        <div id="pricing" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">Markup vs Final Price Analysis</div>
+                <canvas id="markupAnalysisChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h3><i class="fas fa-layer-group"></i> Tier Performance</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Price Tier</th>
+                                <th>Calculations</th>
+                                <th>Avg Margin</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>₹100-₹299</td>
+                                <td>342</td>
+                                <td>38.2%</td>
+                                <td>🟢 Excellent</td>
+                            </tr>
+                            <tr>
+                                <td>₹300-₹699</td>
+                                <td>456</td>
+                                <td>31.7%</td>
+                                <td>🟢 Good</td>
+                            </tr>
+                            <tr>
+                                <td>₹700-₹1,199</td>
+                                <td>289</td>
+                                <td>28.4%</td>
+                                <td>🟡 Average</td>
+                            </tr>
+                            <tr>
+                                <td>₹1,200-₹2,000</td>
+                                <td>160</td>
+                                <td>22.1%</td>
+                                <td>🟡 Average</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="analysis-card">
+                    <h3><i class="fas fa-brain"></i> Psychological Pricing Impact</h3>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 2rem; color: #667eea; font-weight: bold;">94.3%</div>
+                        <div>of calculations use psychological pricing</div>
+                    </div>
+                    <div class="recommendation">
+                        <strong>Great Choice:</strong> Psychological pricing typically increases conversion rates by 15-30%.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Performance Tab -->
+        <div id="categories" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">Category Performance Comparison</div>
+                <canvas id="categoryChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h3><i class="fas fa-star"></i> Top Performing Categories</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Avg Margin</th>
+                                <th>Volume</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Beauty</td>
+                                <td>41.2%</td>
+                                <td>234</td>
+                                <td>📈 +12%</td>
+                            </tr>
+                            <tr>
+                                <td>Fashion</td>
+                                <td>36.8%</td>
+                                <td>189</td>
+                                <td>📈 +8%</td>
+                            </tr>
+                            <tr>
+                                <td>Toys</td>
+                                <td>33.1%</td>
+                                <td>156</td>
+                                <td>📊 Stable</td>
+                            </tr>
+                            <tr>
+                                <td>Electronics</td>
+                                <td>24.7%</td>
+                                <td>298</td>
+                                <td>📉 -3%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="analysis-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Areas for Improvement</h3>
+                    <div class="warning">
+                        <strong>Electronics Category:</strong> High volume but lower margins. Consider focusing on premium electronics or accessories.
+                    </div>
+                    <div class="recommendation">
+                        <strong>Opportunity:</strong> Beauty and Fashion categories show strong performance. Consider expanding inventory in these areas.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations" class="tab-content">
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h3><i class="fas fa-rocket"></i> Growth Opportunities</h3>
+                    <div class="recommendation">
+                        <strong>Focus on Beauty Products:</strong> 41.2% average margin with growing demand. Consider expanding this category by 25%.
+                    </div>
+                    <div class="recommendation">
+                        <strong>Premium Electronics:</strong> Instead of competing on price, focus on premium electronics with unique value propositions.
+                    </div>
+                    <div class="recommendation">
+                        <strong>Seasonal Adjustments:</strong> Implement seasonal pricing for fashion and toys categories during peak seasons.
+                    </div>
+                </div>
+                <div class="analysis-card">
+                    <h3><i class="fas fa-shield-alt"></i> Risk Management</h3>
+                    <div class="warning">
+                        <strong>Competition Pressure:</strong> 23% of products face "Very High" competition. Consider differentiation strategies.
+                    </div>
+                    <div class="warning">
+                        <strong>Price Sensitivity:</strong> Monitor products priced above ₹1,500 for margin compression.
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Recommended Actions Priority Matrix</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div style="background: #d4edda; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #155724; margin-bottom: 15px;">High Impact, Easy Implementation</h4>
+                        <ul style="color: #155724;">
+                            <li>Increase beauty product inventory</li>
+                            <li>Enable psychological pricing for all products</li>
+                            <li>Focus on unique value propositions</li>
+                        </ul>
+                    </div>
+                    <div style="background: #fff3cd; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #856404; margin-bottom: 15px;">High Impact, Complex Implementation</h4>
+                        <ul style="color: #856404;">
+                            <li>Develop premium electronics strategy</li>
+                            <li>Implement dynamic pricing based on competition</li>
+                            <li>Create seasonal pricing algorithms</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="export-btn" onclick="exportReport()">
+                    <i class="fas fa-download"></i> Export Full Report
+                </button>
+                <button class="export-btn" onclick="exportData()">
+                    <i class="fas fa-table"></i> Export Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Analytics Dashboard JavaScript
+        let currentTab = 'overview';
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            currentTab = tabName;
+
+            // Initialize charts for the active tab
+            initializeCharts(tabName);
+        }
+
+        function initializeCharts(tabName) {
+            if (tabName === 'overview') {
+                createCalculationsChart();
+                createPriceDistributionChart();
+            } else if (tabName === 'pricing') {
+                createMarkupAnalysisChart();
+            } else if (tabName === 'categories') {
+                createCategoryChart();
+            }
+        }
+
+        function createCalculationsChart() {
+            const ctx = document.getElementById('calculationsChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Calculations',
+                        data: [65, 89, 123, 156, 189, 234],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPriceDistributionChart() {
+            const ctx = document.getElementById('priceDistributionChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['₹100-299', '₹300-699', '₹700-1199', '₹1200+'],
+                    datasets: [{
+                        data: [342, 456, 289, 160],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createMarkupAnalysisChart() {
+            const ctx = document.getElementById('markupAnalysisChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Markup vs Price',
+                        data: [
+                            {x: 150, y: 60}, {x: 250, y: 58}, {x: 400, y: 45},
+                            {x: 600, y: 42}, {x: 900, y: 35}, {x: 1200, y: 25}
+                        ],
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Supplier Price (₹)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Markup (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCategoryChart() {
+            const ctx = document.getElementById('categoryChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Beauty', 'Fashion', 'Toys', 'Home', 'Sports', 'Electronics'],
+                    datasets: [{
+                        label: 'Average Margin (%)',
+                        data: [41.2, 36.8, 33.1, 29.4, 27.6, 24.7],
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4ecdc4', '#45b7d1'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Profit Margin (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportReport() {
+            // Generate comprehensive report
+            const reportData = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    totalCalculations: 1247,
+                    averageMargin: 32.4,
+                    averagePrice: 847,
+                    bestCategory: 'Beauty'
+                },
+                recommendations: [
+                    'Focus on Beauty Products: 41.2% average margin',
+                    'Consider premium electronics strategy',
+                    'Implement seasonal pricing adjustments'
+                ]
+            };
+
+            const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+                type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'viraldeals-analytics-report.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportData() {
+            // Export sample data as CSV
+            const csvData = [
+                ['Category', 'Average Margin', 'Volume', 'Trend'],
+                ['Beauty', '41.2%', '234', '+12%'],
+                ['Fashion', '36.8%', '189', '+8%'],
+                ['Toys', '33.1%', '156', 'Stable'],
+                ['Electronics', '24.7%', '298', '-3%']
+            ];
+
+            const csvContent = csvData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'viraldeals-category-performance.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize dashboard on load
+        window.addEventListener('load', function() {
+            initializeCharts('overview');
+        });
+    </script>
+</body>
+</html>
